@@ -1,4 +1,4 @@
 JHekaton
 ========
 
-Migration of the HekatonKhire tool to Java
+Migration of the HekatonKheir tool to Java
