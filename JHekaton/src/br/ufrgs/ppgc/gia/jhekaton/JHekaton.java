@@ -1,15 +1,14 @@
 package br.ufrgs.ppgc.gia.jhekaton;
 
 import java.io.File;
+import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.encog.engine.network.activation.ActivationCompetitive;
-import org.encog.engine.network.activation.ActivationElliott;
 import org.encog.engine.network.activation.ActivationSigmoid;
-import org.encog.engine.network.activation.ActivationStep;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
 import org.encog.ml.data.basic.BasicMLData;
@@ -24,9 +23,9 @@ import org.encog.neural.networks.training.TrainingSetScore;
 import org.encog.neural.networks.training.anneal.NeuralSimulatedAnnealing;
 import org.encog.neural.networks.training.propagation.back.Backpropagation;
 import org.encog.neural.pattern.ElmanPattern;
-import org.encog.neural.pattern.JordanPattern;
 
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model;
+import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Subvertex;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Transition;
 
@@ -71,59 +70,61 @@ public class JHekaton {
 			Unmarshaller jaxbUnmarshaller = jaxbContext.createUnmarshaller();
 			
 			//Parseia a entrada
-			Model customer = (Model) jaxbUnmarshaller.unmarshal(file);
+			Model stateMachineDiagram = (Model) jaxbUnmarshaller.unmarshal(file);
 			
 			int countEntradas = 0, countSaidas = 0;
 			
 			// Itera sobre os estados
-			for(Subvertex sub : customer.getPackagedElement().getRegion().getSubvertex()){
+			for(Subvertex sub : stateMachineDiagram.getPackagedElement().getRegion().getSubvertex()){
 				System.out.println("Estado: "+sub.getName()+"-"+sub.getType());
 				
 				// Conta os estados como entradas, descontando o "estado final"
-				if(!sub.getType().equalsIgnoreCase("uml:FinalState")){
+				if(!sub.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
 					countEntradas++;
 				}
 				
 				// Conta os estados como saída, descontando o "estado inicial"
-				if(!sub.getType().equalsIgnoreCase("uml:Pseudostate")){
+				if(!sub.getType().equalsIgnoreCase(StateType.INITIAL.getUmlType())){
 					countSaidas++;
 				}
 			}
 			
 			// Itera sobre as transições
-			for(Transition t : customer.getPackagedElement().getRegion().getTransition()){
+			for(Transition t : stateMachineDiagram.getPackagedElement().getRegion().getTransition()){
 				System.out.println("Transicao: "+t.getName());
 				countEntradas++;
 			}
 			System.out.println(countEntradas + ":"+countSaidas);
 
-			
-//			ElmanPattern pattern = new ElmanPattern();
-//			pattern.setActivationFunction(new ActivationSigmoid());
-//			pattern.setInputNeurons(countEntradas);
-//			pattern.addHiddenLayer(5);
-//			pattern.setOutputNeurons(countSaidas);
-//			BasicNetwork rede = (BasicNetwork)pattern.generate();
-			
-			
-			// Criação da rede, com 2 camadas
-			JordanPattern pattern = new JordanPattern();
+			// Criação da rede, com 2 camadas			
+			ElmanPattern pattern = new ElmanPattern();
 			pattern.setActivationFunction(new ActivationSigmoid());
-			// Cria rede com camada de entrada dimensionada pela contagem 
+			// Cria rede com camada de entrada dimensionada pela contagem
 			pattern.setInputNeurons(countEntradas);
-
-			// configura a rede com apenas uma camada oculta
-			pattern.addHiddenLayer(5);
-			
+			// quantidade de camadas ocultas segue o número de transições
+			pattern.addHiddenLayer(stateMachineDiagram.getPackagedElement().getRegion().getTransition().size());
 			// ... camada de saída dimensionada pela contagem
 			pattern.setOutputNeurons(countSaidas);
-			BasicNetwork rede = (BasicNetwork) pattern.generate();
+			BasicNetwork rede = (BasicNetwork)pattern.generate();
+			
+			
+//			// Criação da rede, com 2 camadas
+//			JordanPattern pattern = new JordanPattern();
+//			pattern.setActivationFunction(new ActivationSigmoid());
+//			// Cria rede com camada de entrada dimensionada pela contagem 
+//			pattern.setInputNeurons(countEntradas);
+//
+//			pattern.addHiddenLayer(5);
+//			
+//			// ... camada de saída dimensionada pela contagem
+//			pattern.setOutputNeurons(countSaidas);
+//			BasicNetwork rede = (BasicNetwork) pattern.generate();
 			
 			MLDataSet trainingSet = new BasicMLDataSet(ENTRADAS,SAIDAS) ;
 			
 			CalculateScore score = new TrainingSetScore(trainingSet);
 
-			final MLTrain trainMain = new Backpropagation(rede, trainingSet, 0.0000000001, 0.01);
+			final MLTrain trainMain = new Backpropagation(rede, trainingSet, 0.0000000001, 0.001);
 			final MLTrain trainAlt = new NeuralSimulatedAnnealing(rede, score, 10, 2, 100);
 
 			final StopTrainingStrategy stop = new StopTrainingStrategy();
@@ -178,5 +179,31 @@ public class JHekaton {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
-	}	
+	}
+	
+	private List<Instancia> geraConjuntoTreinamento(Region diagram){
+		List<Instancia> result = new ArrayList<Instancia>();
+		Subvertex initialState = XmiUtil.getStatesByType(diagram, StateType.INITIAL).get(0);
+		return result;
+	}
+	
+}
+
+class Instancia {
+	
+	private double[][] entradas;
+	private double[][] saidas;
+
+	public double[][] getEntradas() {
+		return entradas;
+	}
+	public void setEntradas(double[][] entradas) {
+		this.entradas = entradas;
+	}
+	public double[][] getSaidas() {
+		return saidas;
+	}
+	public void setSaidas(double[][] saidas) {
+		this.saidas = saidas;
+	}
 }
