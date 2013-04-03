@@ -35,7 +35,7 @@ public class XmiUtil {
 		return null;
 	}
 	
-	public List<Transition> getTransitionsFromState(Region region, String id){
+	public static List<Transition> getTransitionsFromState(Region region, String id){
 		List<Transition> result = new ArrayList<Transition>();
 		for(Transition transition : region.getTransition()){
 			if(transition.getSource().equalsIgnoreCase(id)){
@@ -46,7 +46,7 @@ public class XmiUtil {
 		
 	}
 	
-	public List<Transition> getTransitionsToState(Region region, String id){
+	public static List<Transition> getTransitionsToState(Region region, String id){
 		List<Transition> result = new ArrayList<Transition>();
 		for(Transition transition : region.getTransition()){
 			if(transition.getTarget().equalsIgnoreCase(id)){

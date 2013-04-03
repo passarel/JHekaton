@@ -39,21 +39,21 @@ public class JHekaton {
 	// Matriz de entradas
 	private static final double[][] ENTRADAS = new double[][]{
 //		{Ir,C1,C2,F1,F2,II,S0,S1,S2}, Rótulos 
-		{1d,0d,0d,0d,0d,1d,0d,0d,0d}, // Instancia 1
-		{0d,1d,0d,0d,0d,0d,1d,0d,0d}, // Instancia 2
-		{0d,0d,1d,0d,0d,0d,1d,0d,0d}, // Instancia 3
-		{0d,0d,0d,1d,0d,0d,0d,1d,0d}, // Instancia 4
-		{0d,0d,0d,0d,1d,0d,0d,0d,1d}  // Instancia 5
+		{1d,-1d,-1d,-1d,-1d,1d,-1d,-1d,-1d}, // Instancia 1
+		{-1d,1d,-1d,-1d,-1d,-1d,1d,-1d,-1d}, // Instancia 2
+		{-1d,-1d,1d,-1d,-1d,-1d,1d,-1d,-1d}, // Instancia 3
+		{-1d,-1d,-1d,1d,-1d,-1d,-1d,1d,-1d}, // Instancia 4
+		{-1d,-1d,-1d,-1d,1d,-1d,-1d,-1d,1d}  // Instancia 5
 	};
 				
 				// Matriz de saídas
 	private static final double[][] SAIDAS = new double[][]{
 //		{S0,S1,S2,FF}, Rótulos
-		{1d,0d,0d,0d}, // Instancia 1
-		{0d,1d,0d,0d}, // Instancia 2
-		{0d,0d,1d,0d}, // Instancia 3
-		{0d,0d,0d,1d}, // Instancia 4
-		{0d,0d,0d,1d}  // Instancia 5
+		{1d,-1d,-1d,-1d}, // Instancia 1
+		{-1d,1d,-1d,-1d}, // Instancia 2
+		{-1d,-1d,1d,-1d}, // Instancia 3
+		{-1d,-1d,-1d,1d}, // Instancia 4
+		{-1d,-1d,-1d,1d}  // Instancia 5
 	};
 	
 	private static final int TESTE = 1;
@@ -76,8 +76,6 @@ public class JHekaton {
 			
 			// Itera sobre os estados
 			for(Subvertex sub : stateMachineDiagram.getPackagedElement().getRegion().getSubvertex()){
-				System.out.println("Estado: "+sub.getName()+"-"+sub.getType());
-				
 				// Conta os estados como entradas, descontando o "estado final"
 				if(!sub.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
 					countEntradas++;
@@ -91,7 +89,6 @@ public class JHekaton {
 			
 			// Itera sobre as transições
 			for(Transition t : stateMachineDiagram.getPackagedElement().getRegion().getTransition()){
-				System.out.println("Transicao: "+t.getName());
 				countEntradas++;
 			}
 			System.out.println(countEntradas + ":"+countSaidas);
@@ -158,15 +155,13 @@ public class JHekaton {
 			double[] teste1 = ENTRADAS[TESTE]; // Instancia 1;
 			MLData testeSet = new BasicMLData(teste1) ;
 			MLData result = rede.compute(testeSet);
-			System.out.println("Resultado arredondado:");
-			double maior = 0d;
+			double maior = -1d;
 			int index = -1;
 			for(int i = 0 ; i < result.getData().length; i++){
 				if(maior < result.getData()[i]){
 					maior = result.getData()[i];
 					index = i;
 				}
-				System.out.print(Math.round(result.getData()[i])+"\t");
 			}
 			System.out.println();
 			System.out.println("Final: "+index);
@@ -174,16 +169,25 @@ public class JHekaton {
 			for(double i : result.getData()){
 				System.out.print(i+"\t");
 			}
-
+			System.out.println();
+			JHekaton.geraConjuntoTreinamento(stateMachineDiagram.getPackagedElement().getRegion());
 			
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private List<Instancia> geraConjuntoTreinamento(Region diagram){
+	private static List<Instancia> geraConjuntoTreinamento(Region diagram){
+		System.out.println("==== Caminhamento =====");
 		List<Instancia> result = new ArrayList<Instancia>();
-		Subvertex initialState = XmiUtil.getStatesByType(diagram, StateType.INITIAL).get(0);
+		Subvertex state = XmiUtil.getStatesByType(diagram, StateType.INITIAL).get(0);
+		while(!state.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
+			System.out.println("Estado: "+state.getName()+":"+state.getId());
+			Transition t =  XmiUtil.getTransitionsFromState(diagram, state.getId()).get(0);
+			System.out.println("Transicao: "+t.getName()+":"+t.getId());
+			state = XmiUtil.getStateById(diagram, t.getTarget());
+		}
+		System.out.println("Estado: "+state.getName()+":"+state.getId());
 		return result;
 	}
 	

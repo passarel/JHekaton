@@ -12,9 +12,9 @@
 			<subvertex xmi:type="uml:State" xmi:id="_170cII9lEeKwZI8VGYxF7g"
 				name="State0" />
 			<subvertex xmi:type="uml:State" xmi:id="_2dm6kI9lEeKwZI8VGYxF7g"
-				name="State1" />
-			<subvertex xmi:type="uml:State" xmi:id="_21yKAI9lEeKwZI8VGYxF7g"
 				name="State2" />
+			<subvertex xmi:type="uml:State" xmi:id="_21yKAI9lEeKwZI8VGYxF7g"
+				name="State1" />
 			<transition xmi:id="_4bSIMI9lEeKwZI8VGYxF7g" name="Inicial"
 				source="_09S-YI9lEeKwZI8VGYxF7g" target="_170cII9lEeKwZI8VGYxF7g" >1</transition>
 			<transition xmi:id="_6gGfoI9lEeKwZI8VGYxF7g" name="Condicional1"
