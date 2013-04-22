@@ -2,7 +2,10 @@ package br.ufrgs.ppgc.gia.jhekaton;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -36,25 +39,8 @@ import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Transition;
  */
 public class JHekaton {
 
-	// Matriz de entradas
-	private static final double[][] ENTRADAS = new double[][]{
-//		{Ir,C1,C2,F1,F2,II,S0,S1,S2}, Rótulos 
-		{1d,-1d,-1d,-1d,-1d,1d,-1d,-1d,-1d}, // Instancia 1
-		{-1d,1d,-1d,-1d,-1d,-1d,1d,-1d,-1d}, // Instancia 2
-		{-1d,-1d,1d,-1d,-1d,-1d,1d,-1d,-1d}, // Instancia 3
-		{-1d,-1d,-1d,1d,-1d,-1d,-1d,1d,-1d}, // Instancia 4
-		{-1d,-1d,-1d,-1d,1d,-1d,-1d,-1d,1d}  // Instancia 5
-	};
-				
-				// Matriz de saídas
-	private static final double[][] SAIDAS = new double[][]{
-//		{S0,S1,S2,FF}, Rótulos
-		{1d,-1d,-1d,-1d}, // Instancia 1
-		{-1d,1d,-1d,-1d}, // Instancia 2
-		{-1d,-1d,1d,-1d}, // Instancia 3
-		{-1d,-1d,-1d,1d}, // Instancia 4
-		{-1d,-1d,-1d,1d}  // Instancia 5
-	};
+	protected static Map<String, Integer> entradas;
+	protected static Map<String, Integer> saidas;
 	
 	private static final int TESTE = 1;
 	
@@ -74,26 +60,42 @@ public class JHekaton {
 			
 			int countEntradas = 0, countSaidas = 0;
 			
+			JHekaton.entradas = new HashMap<String, Integer>();
+			JHekaton.saidas = new HashMap<String, Integer>();
+			
 			// Itera sobre os estados
 			for(Subvertex sub : stateMachineDiagram.getPackagedElement().getRegion().getSubvertex()){
 				// Conta os estados como entradas, descontando o "estado final"
 				if(!sub.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
+					JHekaton.entradas.put(sub.getId(), countEntradas);
+					System.out.println("Entrada:"+countEntradas+":"+sub.getId()); 
 					countEntradas++;
 				}
 				
 				// Conta os estados como saída, descontando o "estado inicial"
 				if(!sub.getType().equalsIgnoreCase(StateType.INITIAL.getUmlType())){
+					JHekaton.saidas.put(sub.getId(), countSaidas);
+					System.out.println("Saída:"+countSaidas+":"+sub.getId());
 					countSaidas++;
 				}
 			}
 			
 			// Itera sobre as transições
 			for(Transition t : stateMachineDiagram.getPackagedElement().getRegion().getTransition()){
+				JHekaton.entradas.put(t.getId(), countEntradas);
+				System.out.println("Entrada:"+countEntradas+":"+t.getId());
 				countEntradas++;
 			}
-			System.out.println(countEntradas + ":"+countSaidas);
+			
+			System.out.println("Topologia da Rede: "+countEntradas +":" + stateMachineDiagram.getPackagedElement().getRegion().getTransition().size() + ":"+countSaidas);
 
-			// Criação da rede, com 2 camadas			
+			// Gera o Arquivo de treinamento - Sequencia de Supervisao
+			List<Object> conjuntoTreinamento = JHekaton.geraConjuntoTreinamento(stateMachineDiagram.getPackagedElement().getRegion());
+			System.out.println();
+			Instancia inst = new Instancia(countEntradas, countSaidas);
+			inst.construir(conjuntoTreinamento);
+			
+			// Criação da rede, com 3 camadas			
 			ElmanPattern pattern = new ElmanPattern();
 			pattern.setActivationFunction(new ActivationSigmoid());
 			// Cria rede com camada de entrada dimensionada pela contagem
@@ -104,20 +106,10 @@ public class JHekaton {
 			pattern.setOutputNeurons(countSaidas);
 			BasicNetwork rede = (BasicNetwork)pattern.generate();
 			
-			
-//			// Criação da rede, com 2 camadas
-//			JordanPattern pattern = new JordanPattern();
-//			pattern.setActivationFunction(new ActivationSigmoid());
-//			// Cria rede com camada de entrada dimensionada pela contagem 
-//			pattern.setInputNeurons(countEntradas);
-//
-//			pattern.addHiddenLayer(5);
-//			
-//			// ... camada de saída dimensionada pela contagem
-//			pattern.setOutputNeurons(countSaidas);
-//			BasicNetwork rede = (BasicNetwork) pattern.generate();
-			
-			MLDataSet trainingSet = new BasicMLDataSet(ENTRADAS,SAIDAS) ;
+
+			double[][] entradasTreinamento = inst.getEntradas();
+			double[][] saidasTreinamento = inst.getSaidas();
+			MLDataSet trainingSet = new BasicMLDataSet(entradasTreinamento,saidasTreinamento) ;
 			
 			CalculateScore score = new TrainingSetScore(trainingSet);
 
@@ -141,18 +133,18 @@ public class JHekaton {
 			
 			// teste 
 			System.out.println("Caso de teste:");
-			for(double i : ENTRADAS[TESTE]){
+			for(double i : entradasTreinamento[TESTE]){
 				System.out.print(i+"\t");
 			}
 			System.out.println();
 			System.out.println("Resultado esperado:");
 			
-			for(double i : SAIDAS[TESTE]){
+			for(double i : saidasTreinamento[TESTE]){
 				System.out.print(i+"\t");
 			}
 
 			System.out.println();
-			double[] teste1 = ENTRADAS[TESTE]; // Instancia 1;
+			double[] teste1 = entradasTreinamento[TESTE]; // Instancia 1;
 			MLData testeSet = new BasicMLData(teste1) ;
 			MLData result = rede.compute(testeSet);
 			double maior = -1d;
@@ -170,23 +162,80 @@ public class JHekaton {
 				System.out.print(i+"\t");
 			}
 			System.out.println();
-			JHekaton.geraConjuntoTreinamento(stateMachineDiagram.getPackagedElement().getRegion());
+			
+//			MLDataSet trainingSet1 = new BasicMLDataSet(ENTRADAS1,SAIDAS1) ;
+//			
+//			CalculateScore score1 = new TrainingSetScore(trainingSet1);
+//
+//			final MLTrain trainMain1 = new Backpropagation(rede, trainingSet, 0.0000000001, 0.001);
+//			final MLTrain trainAlt1 = new NeuralSimulatedAnnealing(rede, score1, 10, 2, 100);
+//
+//			final StopTrainingStrategy stop1 = new StopTrainingStrategy();
+//			trainMain1.addStrategy(new Greedy());
+//			trainMain1.addStrategy(new HybridStrategy(trainAlt1));
+//			trainMain1.addStrategy(stop1);
+//
+//			int epoch1 = 0;
+//			while (!stop1.shouldStop()) {
+//				// cada iteração é uma época
+//				trainMain1.iteration();
+//				System.out.println("Epoch #" + epoch1 + " Error:" + trainMain1.getError());
+//				epoch1++;
+//			}
+//			trainMain1.finishTraining();
+//			System.out.println("Erro Final apos treinamento: "+trainMain1.getError());
+//			
+//			// teste 
+//			System.out.println("Caso de teste:");
+//			for(double i : ENTRADAS1[TESTE]){
+//				System.out.print(i+"\t");
+//			}
+//			System.out.println();
+//			System.out.println("Resultado esperado:");
+//			
+//			for(double i : SAIDAS1[TESTE]){
+//				System.out.print(i+"\t");
+//			}
+//
+//			System.out.println();
+//			double[] teste2 = ENTRADAS1[TESTE]; // Instancia 1;
+//			MLData testeSet1 = new BasicMLData(teste2) ;
+//			MLData result1 = rede.compute(testeSet1);
+//			double maior1 = -1d;
+//			int index1 = -1;
+//			for(int i = 0 ; i < result1.getData().length; i++){
+//				if(maior1 < result1.getData()[i]){
+//					maior1 = result1.getData()[i];
+//					index1 = i;
+//				}
+//			}
+//			System.out.println();
+//			System.out.println("Final: "+index1);
+//			System.out.println("Resultado real:");
+//			for(double i : result1.getData()){
+//				System.out.print(i+"\t");
+//			}
+
+			
 			
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
 	}
 	
-	private static List<Instancia> geraConjuntoTreinamento(Region diagram){
+	private static List<Object> geraConjuntoTreinamento(Region diagram){
 		System.out.println("==== Caminhamento =====");
-		List<Instancia> result = new ArrayList<Instancia>();
+		List<Object> result = new ArrayList<Object>();
 		Subvertex state = XmiUtil.getStatesByType(diagram, StateType.INITIAL).get(0);
 		while(!state.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
+			result.add(state);
 			System.out.println("Estado: "+state.getName()+":"+state.getId());
 			Transition t =  XmiUtil.getTransitionsFromState(diagram, state.getId()).get(0);
+			result.add(t);
 			System.out.println("Transicao: "+t.getName()+":"+t.getId());
 			state = XmiUtil.getStateById(diagram, t.getTarget());
 		}
+		result.add(state);
 		System.out.println("Estado: "+state.getName()+":"+state.getId());
 		return result;
 	}
@@ -195,19 +244,89 @@ public class JHekaton {
 
 class Instancia {
 	
-	private double[][] entradas;
-	private double[][] saidas;
+	private int countEntradas;
+	private int countSaidas;
+	
+	private List<double[]> entradas;
+	private List<double[]> saidas;
 
-	public double[][] getEntradas() {
-		return entradas;
+	public Instancia(int countEntradas, int countSaidas) {
+		super();
+		this.countEntradas = countEntradas;
+		this.countSaidas = countSaidas;
 	}
-	public void setEntradas(double[][] entradas) {
-		this.entradas = entradas;
+	
+	public double[][] getEntradas(){
+		System.out.println("Entradas:");
+		double[][] result = new double[this.entradas.size()][this.countEntradas];
+		int i = 0;
+		for(double[] ent : this.entradas){
+			for (int j = 0; j < ent.length; j++) {
+				System.out.print(ent[j]+", ");
+			}
+			System.out.println();
+			result[i] = ent;
+			i++;
+		}
+		System.out.println();
+		System.out.println();
+		return result;
 	}
-	public double[][] getSaidas() {
-		return saidas;
+
+	public double[][] getSaidas(){
+		System.out.println("Saídas");
+		double[][] result = new double[this.saidas.size()][this.countSaidas];
+		int i = 0;
+		for(double[] ent : this.saidas){
+			for (int j = 0; j < ent.length; j++) {
+				System.out.print(ent[j]+", ");
+			}
+			System.out.println();
+			result[i] = ent;
+			i++;
+		}
+		System.out.println();
+		System.out.println();
+		return result;
 	}
-	public void setSaidas(double[][] saidas) {
-		this.saidas = saidas;
+
+	
+	public void construir(List<?> caminho){
+		this.entradas = new ArrayList<double[]>();
+		this.saidas   = new ArrayList<double[]>();
+			
+		Iterator iter = caminho.iterator();		
+		Object o = iter.next();
+		while(iter.hasNext()){
+			
+			double[] entrada = new double[this.countEntradas];
+			double[] saida = new double[this.countSaidas];
+			
+			if(o instanceof Subvertex){
+				entrada[JHekaton.entradas.get(((Subvertex)o).getId())] = 1;
+			} else {
+				entrada[JHekaton.entradas.get(((Transition)o).getId())] = 1;
+			}
+
+			o = iter.next();
+			if(o instanceof Subvertex){
+				entrada[JHekaton.entradas.get(((Subvertex)o).getId())] = 1;
+			} else {
+				entrada[JHekaton.entradas.get(((Transition)o).getId())] = 1;
+			}
+
+			o = iter.next();
+			if(o instanceof Subvertex){
+				saida[JHekaton.saidas.get(((Subvertex)o).getId())] = 1;
+			} else {
+				saida[JHekaton.saidas.get(((Transition)o).getId())] = 1;
+			}
+			
+			this.entradas.add(entrada);
+			this.saidas.add(saida);
+			
+		}
+		
 	}
+	
 }
