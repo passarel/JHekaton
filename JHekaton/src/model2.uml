@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<uml:Model xmi:version="2.1" xmlns:xmi="http://schema.omg.org/spec/XMI/2.1" xmlns:uml="http://www.eclipse.org/uml2/3.0.0/UML" xmi:id="_dz5UUax5EeKsOpBXqVoF4g" name="model">
+  <packagedElement xmi:type="uml:StateMachine" xmi:id="_d1R0YKx5EeKsOpBXqVoF4g" name="MaquinaDeEstados1">
+    <region xmi:id="_d1TpkKx5EeKsOpBXqVoF4g" name="regiao0">
+      <subvertex xmi:type="uml:Pseudostate" xmi:id="_grLDcKx5EeKsOpBXqVoF4g" name="inicial"/>
+      <subvertex xmi:type="uml:FinalState" xmi:id="_h2BtAKx5EeKsOpBXqVoF4g" name="final"/>
+      <subvertex xmi:type="uml:State" xmi:id="_sB5EEKx5EeKsOpBXqVoF4g" name="State0"/>
+      <subvertex xmi:type="uml:State" xmi:id="_s1KUEKx5EeKsOpBXqVoF4g" name="State1"/>
+      <subvertex xmi:type="uml:State" xmi:id="_tSXNcKx5EeKsOpBXqVoF4g" name="State2"/>
+      <subvertex xmi:type="uml:State" xmi:id="_twOOIKx5EeKsOpBXqVoF4g" name="State3"/>
+      <subvertex xmi:type="uml:State" xmi:id="_vY1xwKx5EeKsOpBXqVoF4g" name="State4"/>
+      <subvertex xmi:type="uml:State" xmi:id="_vulYQKx5EeKsOpBXqVoF4g" name="State5"/>
+      <subvertex xmi:type="uml:State" xmi:id="_we9FQKx5EeKsOpBXqVoF4g" name="State6"/>
+      <transition xmi:id="_3qW8AKx5EeKsOpBXqVoF4g" name="Transition0" source="_grLDcKx5EeKsOpBXqVoF4g" target="_sB5EEKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_5lz8EKx5EeKsOpBXqVoF4g" name="Transition1" source="_sB5EEKx5EeKsOpBXqVoF4g" target="_s1KUEKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_6hvY0Kx5EeKsOpBXqVoF4g" name="Transition2" source="_s1KUEKx5EeKsOpBXqVoF4g" target="_tSXNcKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_8NiMQKx5EeKsOpBXqVoF4g" name="Transition3" source="_s1KUEKx5EeKsOpBXqVoF4g" target="_twOOIKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_-UvwYKx5EeKsOpBXqVoF4g" name="Transition4" source="_twOOIKx5EeKsOpBXqVoF4g" target="_we9FQKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_-5kUsKx5EeKsOpBXqVoF4g" name="Transition5" source="_twOOIKx5EeKsOpBXqVoF4g" target="_vulYQKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="__-f8cKx5EeKsOpBXqVoF4g" name="Transition6" source="_vY1xwKx5EeKsOpBXqVoF4g" target="_h2BtAKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_Al7v4Kx6EeKsOpBXqVoF4g" name="Transition7" source="_tSXNcKx5EeKsOpBXqVoF4g" target="_h2BtAKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_BMPh8Kx6EeKsOpBXqVoF4g" name="Transition8" source="_tSXNcKx5EeKsOpBXqVoF4g" target="_vulYQKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_Brhe8Kx6EeKsOpBXqVoF4g" name="Transition9" source="_vulYQKx5EeKsOpBXqVoF4g" target="_vY1xwKx5EeKsOpBXqVoF4g"/>
+      <transition xmi:id="_DLWS8Kx6EeKsOpBXqVoF4g" name="Transition10" source="_we9FQKx5EeKsOpBXqVoF4g" target="_vulYQKx5EeKsOpBXqVoF4g"/>
+    </region>
+  </packagedElement>
+</uml:Model>
