@@ -1,6 +1,8 @@
 package br.ufrgs.ppgc.gia.jhekaton;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -11,7 +13,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import org.eclipse.swt.widgets.Text;
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLData;
 import org.encog.ml.data.MLDataSet;
@@ -56,7 +57,7 @@ public class JHekaton {
 		this.saidas = new HashMap<String, Integer>();
 	}
 	
-	public void parseFile(File file){
+	public Region parseFile(File file){
 		
 		JAXBContext jaxbContext;
 		// Instancia o Parser
@@ -70,6 +71,7 @@ public class JHekaton {
 		} catch (JAXBException e) {
 			e.printStackTrace();
 		}
+		return this.region;
 	}
 	
 	public void extractTopology(){
@@ -105,14 +107,13 @@ public class JHekaton {
 		
 	}
 	
-	public void processa(Text logs) {
-		logs.append("Topologia da Rede: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
+	public void processa() {
+		System.out.println("Topologia da Rede: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
 		
-		JAXBContext jaxbContext;
 		// Gera o Arquivo de treinamento - Sequencia de Supervisao
 		List<Object> conjuntoTreinamento = JHekaton.geraConjuntoTreinamento(this.region);
 		
-		logs.append("\r\n");
+		System.out.println("\r\n");
 		Instancia inst = new Instancia(this.numInputs, this.numOutputs);
 		inst.construir(conjuntoTreinamento);
 		
@@ -146,25 +147,25 @@ public class JHekaton {
 		while (!stop.shouldStop()) {
 			// cada iteração é uma época
 			trainMain.iteration();
-			logs.append("Epoch #" + epoch	+ " Error:" + trainMain.getError()+"\r\n");
 			epoch++;
 		}
 		trainMain.finishTraining();
-		logs.append("Erro Final apos treinamento: "+trainMain.getError()+"\r\n");
+		System.out.println("Treinamento finalizado em "+epoch+" épocas");
+		System.out.println("Erro Final apos treinamento: "+trainMain.getError()+"\r\n");
 		
 		// teste 
-		logs.append("Caso de teste:"+"\r\n");
+		System.out.println("Caso de teste:"+"\r\n");
 		for(double i : entradasTreinamento[TESTE]){
-			logs.append(i+"\t");
+			System.out.println(i+"\t");
 		}
-		logs.append("\r\n");
-		logs.append("Resultado esperado:\r\n");
+		System.out.println("\r\n");
+		System.out.println("Resultado esperado:\r\n");
 		
 		for(double i : saidasTreinamento[TESTE]){
-			logs.append(i+"\t");
+			System.out.println(i+"\t");
 		}
 
-		logs.append("\r\n");
+		System.out.println("\r\n");
 		double[] teste1 = entradasTreinamento[TESTE]; // Instancia 1;
 		MLData testeSet = new BasicMLData(teste1) ;
 		MLData result = rede.compute(testeSet);
@@ -176,13 +177,14 @@ public class JHekaton {
 				index = i;
 			}
 		}
-		logs.append("\r\n");
-		logs.append("Final: "+index+"\r\n");
-		logs.append("Resultado real:\r\n");
+		System.out.println("\r\n");
+		System.out.println("Final: "+index+"\r\n");
+		System.out.println("Resultado real:\r\n");
 		for(double i : result.getData()){
-			logs.append(i+"\t");
+			System.out.println(i+"\t");
 		}
-		logs.append("\r\n");			
+		System.out.println("\r\n");
+		
 	}
 	
 	private static List<Object> geraConjuntoTreinamento(Region diagram){

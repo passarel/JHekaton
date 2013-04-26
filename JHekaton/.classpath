@@ -2,11 +2,17 @@
 <classpath>
 	<classpathentry kind="src" path="src"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER/org.eclipse.jdt.internal.debug.ui.launcher.StandardVMType/JavaSE-1.7"/>
+	<classpathentry kind="lib" path="/usr/local/java/eclipse/plugins/com.ibm.icu_4.4.2.v20110823.jar" sourcepath="/usr/local/java/eclipse/plugins/com.ibm.icu_4.4.2.v20110823.jar"/>
 	<classpathentry kind="lib" path="libs/jaxb-api.jar"/>
 	<classpathentry kind="lib" path="libs/jaxb-impl.jar"/>
 	<classpathentry kind="lib" path="libs/encog-core-3.1.0.jar">
 		<attributes>
 			<attribute name="javadoc_location" value="jar:platform:/resource/JHekaton/docs/encog-javadoc.zip!/"/>
+		</attributes>
+	</classpathentry>
+	<classpathentry kind="lib" path="libs/jgraphx.jar">
+		<attributes>
+			<attribute name="javadoc_location" value="jar:file:/home/igor/git/JHekaton/JHekaton/docs/jgraph.zip!/"/>
 		</attributes>
 	</classpathentry>
 	<classpathentry kind="output" path="bin"/>
