@@ -1,8 +1,6 @@
 package br.ufrgs.ppgc.gia.jhekaton;
 
 import java.io.File;
-import java.io.IOException;
-import java.io.Writer;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -111,11 +109,23 @@ public class JHekaton {
 		System.out.println("Topologia da Rede: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
 		
 		// Gera o Arquivo de treinamento - Sequencia de Supervisao
-		List<Object> conjuntoTreinamento = JHekaton.geraConjuntoTreinamento(this.region);
+//		List<Object> conjuntoTreinamento = JHekaton.geraConjuntoTreinamentoBFS(this.region);
+		List<List<Object>> conjuntoTreinamento = new ArrayList<List<Object>>();
+		Subvertex initialState = XmiUtil.getStatesByType(this.region, StateType.FINAL).get(0);
+		JHekaton.geraConjuntoTreinamentoBackwardTransversal(conjuntoTreinamento, this.region, initialState);
+		
+		// Remove caminhos que podem não terminar no estado final
+		for(Iterator<List<Object>> p = conjuntoTreinamento.iterator(); p.hasNext();){
+			List<Object> next = p.next();
+			Object ultimo = next.get(next.size()-1);
+			if(!(ultimo instanceof Subvertex && ((Subvertex)ultimo).getType().equals(StateType.FINAL.getUmlType())) ){
+				p.remove();
+			}
+		}
 		
 		System.out.println("\r\n");
 		Instancia inst = new Instancia(this.numInputs, this.numOutputs);
-		inst.construir(conjuntoTreinamento);
+		inst.construir(conjuntoTreinamento.get(0));
 		
 		// Criação da rede, com 3 camadas			
 		ElmanPattern pattern = new ElmanPattern();
@@ -187,23 +197,25 @@ public class JHekaton {
 		
 	}
 	
-	private static List<Object> geraConjuntoTreinamento(Region diagram){
-		System.out.println("==== Caminhamento =====");
-		List<Object> result = new ArrayList<Object>();
-		Subvertex state = XmiUtil.getStatesByType(diagram, StateType.INITIAL).get(0);
-		while(!state.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
-			result.add(state);
-			System.out.println("Estado: "+state.getName()+":"+state.getId()+"-"+state.getName());
-			Transition t =  XmiUtil.getTransitionsFromState(diagram, state.getId()).get(0);
-			result.add(t);
-			System.out.println("Transicao: "+t.getName()+":"+t.getId()+"-"+t.getName());
-			state = XmiUtil.getStateById(diagram, t.getTarget());
+	private static void geraConjuntoTreinamentoBackwardTransversal(List<List<Object>> result, Region diagram, Subvertex state){
+		List<Transition> transitionsToState = XmiUtil.getTransitionsToState(diagram, state.getId());
+		if(transitionsToState != null) {
+			for(Transition e :  transitionsToState){
+				Subvertex w = XmiUtil.getStateById(diagram, e.getSource());
+				if(w.getType().equals(StateType.INITIAL.getUmlType())){
+					List<Object> path = new ArrayList<Object>();
+					result.add(path);
+				}
+				geraConjuntoTreinamentoBackwardTransversal(result, diagram, w);
+				List list = (List)result.get(result.size()-1);
+				if(!list.contains(w)){
+					list.add(w);
+				}
+				list.add(e);				
+				list.add(state);
+			}		
 		}
-		result.add(state);
-		System.out.println("Estado: "+state.getName()+":"+state.getId()+"-"+state.getName());
-		return result;
 	}
-	
 }
 
 class Instancia {
@@ -258,13 +270,19 @@ class Instancia {
 	public void construir(List<?> caminho){
 		this.entradas = new ArrayList<double[]>();
 		this.saidas   = new ArrayList<double[]>();
-			
+		
 		Iterator iter = caminho.iterator();		
 		Object o = iter.next();
 		while(iter.hasNext()){
 			
 			double[] entrada = new double[this.countEntradas];
+			for (int i = 0; i < entrada.length; i++) {
+				entrada[i] = -1;
+			}
 			double[] saida = new double[this.countSaidas];
+			for (int i = 0; i < saida.length; i++) {
+				saida[i] = -1;
+			}
 			
 			if(o instanceof Subvertex){
 				entrada[JHekaton.entradas.get(((Subvertex)o).getId())] = 1;
