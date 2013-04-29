@@ -573,7 +573,7 @@ public class Model {
             @XmlType(name = "", propOrder = {
                 "value"
             })
-            public static class Subvertex {
+            public static class Subvertex implements Comparable<Subvertex> {
 
                 @XmlValue
                 protected String value;
@@ -708,6 +708,11 @@ public class Model {
                 public void setKind(String value) {
                     this.kind = value;
                 }
+
+				@Override
+				public int compareTo(Subvertex o) {
+					return this.getId().compareTo(o.getId());
+				}
 
             }
 
