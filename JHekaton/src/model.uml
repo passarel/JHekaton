@@ -16,15 +16,15 @@
 			<subvertex xmi:type="uml:State" xmi:id="_21yKAI9lEeKwZI8VGYxF7g"
 				name="State1" />
 			<transition xmi:id="_4bSIMI9lEeKwZI8VGYxF7g" name="Inicial"
-				source="_09S-YI9lEeKwZI8VGYxF7g" target="_170cII9lEeKwZI8VGYxF7g" >1</transition>
+				source="_09S-YI9lEeKwZI8VGYxF7g" target="_170cII9lEeKwZI8VGYxF7g" />
 			<transition xmi:id="_6gGfoI9lEeKwZI8VGYxF7g" name="Condicional1"
-				source="_170cII9lEeKwZI8VGYxF7g" target="_21yKAI9lEeKwZI8VGYxF7g" >0.5</transition>
+				source="_170cII9lEeKwZI8VGYxF7g" target="_21yKAI9lEeKwZI8VGYxF7g" />
 			<transition xmi:id="_8hzRoI9lEeKwZI8VGYxF7g" name="Condicional2"
-				source="_170cII9lEeKwZI8VGYxF7g" target="_2dm6kI9lEeKwZI8VGYxF7g" >0.5</transition>
+				source="_170cII9lEeKwZI8VGYxF7g" target="_2dm6kI9lEeKwZI8VGYxF7g" />
 			<transition xmi:id="_9-6I0I9lEeKwZI8VGYxF7g" name="Final1"
-				source="_21yKAI9lEeKwZI8VGYxF7g" target="_1pZPYI9lEeKwZI8VGYxF7g" >1</transition>
+				source="_21yKAI9lEeKwZI8VGYxF7g" target="_1pZPYI9lEeKwZI8VGYxF7g" />
 			<transition xmi:id="__JS4UI9lEeKwZI8VGYxF7g" name="Final2"
-				source="_2dm6kI9lEeKwZI8VGYxF7g" target="_1pZPYI9lEeKwZI8VGYxF7g" >1</transition>
+				source="_2dm6kI9lEeKwZI8VGYxF7g" target="_1pZPYI9lEeKwZI8VGYxF7g" />
 		</region>
 	</packagedElement>
 </uml:Model>
