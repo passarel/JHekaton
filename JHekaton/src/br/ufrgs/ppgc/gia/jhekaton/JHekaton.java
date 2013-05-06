@@ -206,7 +206,9 @@ public class JHekaton {
 					List<Object> path = new ArrayList<Object>();
 					result.add(path);
 				}
-				geraConjuntoTreinamentoBackwardTransversal(result, diagram, w);
+				if(!state.getId().equals(w.getId())){
+					geraConjuntoTreinamentoBackwardTransversal(result, diagram, w);
+				}
 				List list = (List)result.get(result.size()-1);
 				if(!list.contains(w)){
 					list.add(w);
