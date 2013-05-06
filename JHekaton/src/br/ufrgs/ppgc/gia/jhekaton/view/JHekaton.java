@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintStream;
 import java.util.ArrayList;
+import java.util.Hashtable;
 import java.util.List;
 
 import javax.swing.JButton;
@@ -25,15 +26,21 @@ import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 
 import br.ufrgs.ppgc.gia.jhekaton.StateType;
+import br.ufrgs.ppgc.gia.jhekaton.XmiUtil;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Subvertex;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Transition;
-import br.ufrgs.ppgc.gia.jhekaton.xml.XMI;
 
-import com.mxgraph.model.mxCell;
+import com.mxgraph.layout.mxFastOrganicLayout;
+import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.model.mxICell;
 import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.swing.util.mxMorphing;
+import com.mxgraph.util.mxConstants;
+import com.mxgraph.util.mxEventObject;
+import com.mxgraph.util.mxEventSource.mxIEventListener;
 import com.mxgraph.view.mxGraph;
+import com.mxgraph.view.mxStylesheet;
 
 public class JHekaton {
 
@@ -43,6 +50,8 @@ public class JHekaton {
 	private File file;
 	private JTextArea txtLogs;
 	private StatusBar statusBar;
+
+	private mxGraphComponent graphComponent;
 	private mxGraph diagram;
 
 	/**
@@ -68,41 +77,118 @@ public class JHekaton {
 		initialize();
 	}
 
-	private void updateDiagram(List<Subvertex> vertex, List<Transition> trans ){
+	private void updateDiagram(Region region){
 		
-		diagram.getModel().beginUpdate();
-		diagram.removeCells(diagram.getChildVertices(diagram.getDefaultParent()));
+		this.graphComponent.setEnabled(false);
+		
+		this.diagram.getModel().beginUpdate();
+		this.diagram.removeCells(this.diagram.getChildVertices(this.diagram.getDefaultParent()));
 
-		Object parent = diagram.getDefaultParent();
+		Object parent = this.diagram.getDefaultParent();
+		
+		List lista = new ArrayList();
 
-		try {
-			long position = 20;
-			long prevWidth = 0;
-			
-			List lista = new ArrayList();
-			
-			for (Subvertex subvertex : vertex) {
-				prevWidth = subvertex.getName().length() * 7;
-				Object o;
-				if(subvertex.getType().equalsIgnoreCase(StateType.INITIAL.getUmlType())){
-					o = diagram.insertVertex(parent, subvertex.getId(), subvertex.getName(), position, position, prevWidth, 27,"shape=ellipse;perimeter=100;whiteSpace=wrap;fillColor=green");
-				} else if(subvertex.getType().equalsIgnoreCase(StateType.FINAL.getUmlType())){
-					o = diagram.insertVertex(parent, subvertex.getId(), subvertex.getName(), position, position, prevWidth, 27,"shape=ellipse;perimeter=100;whiteSpace=wrap;fillColor=red");
-				} else {
-					o = diagram.insertVertex(parent, subvertex.getId(), subvertex.getName(), position, position, prevWidth, 27);
+		List<Subvertex> states = region.getSubvertex();
+		
+		// Loop Version
+//		for(Subvertex state : states){
+//			double width = state.getName().length() * 12;
+//			String style = state.getType().equals(StateType.INITIAL.getUmlType()) ? "INITIAL" : state.getType().equals(StateType.FINAL.getUmlType()) ? "FINAL" : "STATE" ;
+//			Object o = diagram.insertVertex(parent, state.getId(), state.getName(), 20, 20, width, 30, style);
+//			lista.add(o);
+//		}
+		
+		// Recursive Version
+		List<String> ids = new ArrayList<String>();
+		Subvertex initialState = XmiUtil.getStatesByType(region, StateType.INITIAL).get(0);
+		this.addVertex(parent, lista, ids, region, initialState, 1, 1, 0);
+		
+		for (Transition transition : region.getTransition()) {
+			diagram.insertEdge(parent, transition.getId(), null, find(transition.getSource(), lista), find(transition.getTarget(), lista),"ARROW");
+		}
+		
+		diagram.getModel().endUpdate();
+		
+		
+		// define layout
+        mxIGraphLayout layout = new mxFastOrganicLayout(this.diagram);
+        // layout using morphing
+        this.diagram.getModel().beginUpdate();
+        try {
+            layout.execute(this.diagram.getDefaultParent());
+        } finally {
+            mxMorphing morph = new mxMorphing(graphComponent, 20, 1.2, 20);
+            morph.startAnimation();
+            this.diagram.getModel().endUpdate();
+        }
+	}
+	
+	private void addVertex(Object parent, List lista, List<String> ids, Region region, Subvertex state, int position, int count, double x){
+
+		int division = count+1;
+		double ratio = this.graphComponent.getHeight()/division;
+		double position_x = 60+x;
+		double position_y = ratio * position;
+		double width = state.getName().length() * 10;
+
+		String style = state.getType().equals(StateType.INITIAL.getUmlType()) ? "INITIAL" : state.getType().equals(StateType.FINAL.getUmlType()) ? "FINAL" : "STATE" ;
+		
+		Object o = diagram.insertVertex(parent, state.getId(), state.getName(), position_x, position_y, width, 30, style);
+		lista.add(o);
+		ids.add(state.getId());
+		
+		List<Transition> transitions = XmiUtil.getTransitionsFromState(region, state.getId());
+
+		position_x += width+30; 
+		
+		if(transitions != null){
+			for (int i = 0; i < transitions.size() ; i++) {
+				
+				Transition transition = transitions.get(i);
+				
+				Subvertex newState = XmiUtil.getStateById(region, transition.getTarget());
+				
+				if(!ids.contains(newState.getId())){
+					this.addVertex(parent, lista, ids,region, newState, i+1, transitions.size(), position_x);					
 				}
-				lista.add(o);
-				position += prevWidth+5;
+				
+				
 			}
-			
-			for (Transition transition : trans) {
-				diagram.insertEdge(parent, null, "Edge", find(transition.getSource(), lista), find(transition.getTarget(), lista));
-			}
-			
 		}
-		finally {
-			diagram.getModel().endUpdate();
-		}
+	}
+
+	private void fillStyles() {
+		mxStylesheet stylesheet = diagram.getStylesheet();
+		Hashtable<String, Object> styleInitial = new Hashtable<String, Object>();
+		styleInitial.put(mxConstants.STYLE_SHAPE, mxConstants.SHAPE_HEXAGON);
+		styleInitial.put(mxConstants.STYLE_OPACITY, 80);
+		styleInitial.put(mxConstants.STYLE_FONTCOLOR, "#FFFFFF");
+		styleInitial.put(mxConstants.STYLE_FILLCOLOR, "#000000");
+		styleInitial.put(mxConstants.STYLE_SHADOW, "true");
+		stylesheet.putCellStyle("INITIAL", styleInitial);
+
+		Hashtable<String, Object> styleFinal = new Hashtable<String, Object>();
+		styleFinal.put(mxConstants.STYLE_SHAPE, mxConstants.SHAPE_CYLINDER);
+		styleFinal.put(mxConstants.STYLE_OPACITY, 80);
+		styleFinal.put(mxConstants.STYLE_FONTCOLOR, "#FFFFFF");
+		styleFinal.put(mxConstants.STYLE_FILLCOLOR, "#000000");
+		styleFinal.put(mxConstants.STYLE_SHADOW, "true");
+		stylesheet.putCellStyle("FINAL", styleFinal);
+		
+		Hashtable<String, Object> styleState = new Hashtable<String, Object>();
+		styleState.put(mxConstants.STYLE_SHAPE, mxConstants.SHAPE_RECTANGLE);
+		styleState.put(mxConstants.STYLE_OPACITY, 80);
+		styleState.put(mxConstants.STYLE_FONTCOLOR, "#000000");
+		styleState.put(mxConstants.STYLE_FILLCOLOR, "#FFFFFF");
+		styleState.put(mxConstants.STYLE_STROKECOLOR, "#000000");
+		styleState.put(mxConstants.STYLE_SHADOW, "true");
+		stylesheet.putCellStyle("STATE", styleState);
+
+		Hashtable<String, Object> styleArrow = new Hashtable<String, Object>();
+		styleArrow.put(mxConstants.STYLE_FONTCOLOR, "#000000");
+		styleArrow.put(mxConstants.STYLE_STROKECOLOR, "#000000");
+		styleArrow.put(mxConstants.STYLE_SHADOW, "true");
+		stylesheet.putCellStyle("ARROW", styleArrow);
 	}
 	
 	private Object find(String id, List vet){
@@ -131,7 +217,9 @@ public class JHekaton {
 		panelDiagram.setLayout(new BorderLayout(0, 0));
 		
 		diagram = new mxGraph();
-		mxGraphComponent graphComponent = new mxGraphComponent(diagram);
+		graphComponent = new mxGraphComponent(diagram);
+		this.diagram.setAllowLoops(true);
+		this.fillStyles();
 		panelDiagram.add(graphComponent);
 		
 		tabs.addTab("Diagram", null, panelDiagram, null);
@@ -167,7 +255,7 @@ public class JHekaton {
 
 		final br.ufrgs.ppgc.gia.jhekaton.JHekaton jhek = new br.ufrgs.ppgc.gia.jhekaton.JHekaton();
 		
-		final JFileChooser fc = new JFileChooser();
+		final JFileChooser fc = new JFileChooser("/home/igor/git/JHekaton/JHekaton/src/");
 		btnOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
@@ -177,7 +265,7 @@ public class JHekaton {
 		            txtFile.setText(file.getAbsolutePath());
 		            statusBar.setMessage("XMI File Loaded");
 		            Region diag = jhek.parseFile(file);
-		            updateDiagram(diag.getSubvertex(), diag.getTransition());
+		            updateDiagram(diag);
 				}
 				
 			}
