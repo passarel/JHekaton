@@ -72,8 +72,12 @@ public class JHekaton {
 		return this.region;
 	}
 	
-	public void extractTopology(){
+	public Summary extractTopology(){
+		Summary result = new Summary();
+		
 		int countEntradas = 0, countSaidas = 0;
+		
+		result.setStates(this.region.getSubvertex().size());
 		
 		// Itera sobre os estados
 		for(Subvertex sub : this.region.getSubvertex()){
@@ -92,6 +96,8 @@ public class JHekaton {
 			}
 		}
 		
+		result.setTransitions(this.region.getTransition().size());
+		
 		// Itera sobre as transições
 		for(Transition t : this.region.getTransition()){
 			this.entradas.put(t.getId(), countEntradas);
@@ -103,9 +109,14 @@ public class JHekaton {
 		this.numHidden = this.region.getTransition().size();
 		this.numOutputs = countSaidas;
 		
+		result.setInputs(this.numInputs);
+		result.setHiddens(this.numHidden);
+		result.setOutputs(this.numOutputs);
+		
+		return result;
 	}
 	
-	public void processa() {
+	public void processa(Summary summary) {
 		System.out.println("Topologia da Rede: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
 		
 		// Gera o Arquivo de treinamento - Sequencia de Supervisao
@@ -160,6 +171,7 @@ public class JHekaton {
 			epoch++;
 		}
 		trainMain.finishTraining();
+		summary.setEpochs(epoch);
 		System.out.println("Treinamento finalizado em "+epoch+" épocas");
 		System.out.println("Erro Final apos treinamento: "+trainMain.getError()+"\r\n");
 		

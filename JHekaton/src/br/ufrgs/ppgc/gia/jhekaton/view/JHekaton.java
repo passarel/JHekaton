@@ -3,6 +3,7 @@ package br.ufrgs.ppgc.gia.jhekaton.view;
 import java.awt.BorderLayout;
 import java.awt.EventQueue;
 import java.awt.Font;
+import java.awt.GridLayout;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -14,9 +15,11 @@ import java.util.Hashtable;
 import java.util.List;
 
 import javax.swing.JButton;
+import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
+import javax.swing.JList;
 import javax.swing.JPanel;
 import javax.swing.JScrollPane;
 import javax.swing.JTabbedPane;
@@ -24,8 +27,10 @@ import javax.swing.JTextArea;
 import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
+import javax.swing.border.TitledBorder;
 
 import br.ufrgs.ppgc.gia.jhekaton.StateType;
+import br.ufrgs.ppgc.gia.jhekaton.Summary;
 import br.ufrgs.ppgc.gia.jhekaton.XmiUtil;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region;
 import br.ufrgs.ppgc.gia.jhekaton.xml.Model.PackagedElement.Region.Subvertex;
@@ -37,8 +42,6 @@ import com.mxgraph.model.mxICell;
 import com.mxgraph.swing.mxGraphComponent;
 import com.mxgraph.swing.util.mxMorphing;
 import com.mxgraph.util.mxConstants;
-import com.mxgraph.util.mxEventObject;
-import com.mxgraph.util.mxEventSource.mxIEventListener;
 import com.mxgraph.view.mxGraph;
 import com.mxgraph.view.mxStylesheet;
 
@@ -50,6 +53,7 @@ public class JHekaton {
 	private File file;
 	private JTextArea txtLogs;
 	private StatusBar statusBar;
+	private Summary summary;
 
 	private mxGraphComponent graphComponent;
 	private mxGraph diagram;
@@ -208,12 +212,13 @@ public class JHekaton {
 		frmJhekaton.setTitle("JHekaton");
 		frmJhekaton.setBounds(100, 100, 647, 450);
 		frmJhekaton.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frmJhekaton.getContentPane().setLayout(new BorderLayout(0, 0));
+		frmJhekaton.getContentPane().setLayout(new BorderLayout(5, 5));
 		
 		JTabbedPane tabs = new JTabbedPane(JTabbedPane.TOP);
 		frmJhekaton.getContentPane().add(tabs);
 		
 		panelDiagram = new JPanel();
+		panelDiagram.setToolTipText("State Machine Diagram");
 		panelDiagram.setLayout(new BorderLayout(0, 0));
 		
 		diagram = new mxGraph();
@@ -224,6 +229,49 @@ public class JHekaton {
 		
 		tabs.addTab("Diagram", null, panelDiagram, null);
 		
+		JPanel panelSummary = new JPanel();
+		tabs.addTab("Summary", null, panelSummary, null);
+		panelSummary.setLayout(new GridLayout(0, 2, 0, 0));
+		
+		JPanel panelSummaryDiagram = new JPanel();
+		panelSummaryDiagram.setBorder(new TitledBorder(null, "State Machine", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panelSummary.add(panelSummaryDiagram);
+		panelSummaryDiagram.setLayout(new GridLayout(0, 2, 0, 0));
+		
+		JLabel lblTransitions = new JLabel("Transitions:");
+		lblTransitions.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryDiagram.add(lblTransitions);
+		
+		final JLabel labelNumTrantitions = new JLabel("");
+		panelSummaryDiagram.add(labelNumTrantitions);
+		
+		JLabel lblStates = new JLabel("States:");
+		lblStates.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryDiagram.add(lblStates);
+		
+		final JLabel labelNumStates = new JLabel("");
+		panelSummaryDiagram.add(labelNumStates);
+		
+		JPanel panelSummaryNN = new JPanel();
+		panelSummaryNN.setBorder(new TitledBorder(null, "Neural Network", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panelSummary.add(panelSummaryNN);
+		panelSummaryNN.setLayout(new GridLayout(0, 2, 0, 0));
+		
+		JLabel lblTopology = new JLabel("Topology:");
+		lblTopology.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryNN.add(lblTopology);
+		
+		final JLabel labelTopology = new JLabel("");
+		labelTopology.setHorizontalAlignment(SwingConstants.LEFT);
+		panelSummaryNN.add(labelTopology);
+		
+		JLabel lblLearningEpochs = new JLabel("Epochs:");
+		lblLearningEpochs.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryNN.add(lblLearningEpochs);
+		
+		final JLabel labelEpochs = new JLabel("");
+		panelSummaryNN.add(labelEpochs);
+		
 		txtLogs = new JTextArea();
 		txtLogs.setFont(new Font("Courier 10 Pitch", Font.PLAIN, 12));
 		txtLogs.setEditable(false);
@@ -231,24 +279,27 @@ public class JHekaton {
 		tabs.addTab("Logs", null, sp, null);
 		redirectSystemStreams();
 		
-		JPanel panel = new JPanel();
-		frmJhekaton.getContentPane().add(panel, BorderLayout.NORTH);
-		panel.setLayout(new BorderLayout(0, 0));
+		JPanel panelOpenFile = new JPanel();
+		panelOpenFile.setBorder(new TitledBorder(null, "Select an XMI file...", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		frmJhekaton.getContentPane().add(panelOpenFile, BorderLayout.NORTH);
+		panelOpenFile.setLayout(new BorderLayout(3, 3));
 		
 		JLabel lblFile = new JLabel("File:");
-		panel.add(lblFile, BorderLayout.WEST);
+		panelOpenFile.add(lblFile, BorderLayout.WEST);
 		lblFile.setHorizontalAlignment(SwingConstants.RIGHT);
 		
 		txtFile = new JTextField();
-		panel.add(txtFile);
 		txtFile.setEditable(false);
+		txtFile.setFont(new Font("DejaVu Sans Mono", Font.PLAIN, 13));
+		panelOpenFile.add(txtFile);
 		txtFile.setColumns(10);
 		
 		statusBar = new StatusBar("Ready");
+		statusBar.setHorizontalAlignment(SwingConstants.LEFT);
 	    frmJhekaton.getContentPane().add(statusBar, BorderLayout.SOUTH);
 		
 		JPanel panel_1 = new JPanel();
-		panel.add(panel_1, BorderLayout.EAST);
+		panelOpenFile.add(panel_1, BorderLayout.EAST);
 		
 		JButton btnOpen = new JButton("Open");
 		panel_1.add(btnOpen);
@@ -265,20 +316,40 @@ public class JHekaton {
 		            txtFile.setText(file.getAbsolutePath());
 		            statusBar.setMessage("XMI File Loaded");
 		            Region diag = jhek.parseFile(file);
+		            txtLogs.setText("");
+		            summary = jhek.extractTopology();
+		            
+		            labelNumStates.setText(" "+summary.getStates());
+		            labelNumTrantitions.setText(" "+summary.getTransitions());
+		            
+		            labelTopology.setText(" "+summary.getTopology());
+		            
 		            updateDiagram(diag);
 				}
 				
 			}
 		});
 		
+		JPanel panelConfigs = new JPanel();
+		panelConfigs.setBorder(new TitledBorder(null, "Configs", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		frmJhekaton.getContentPane().add(panelConfigs, BorderLayout.WEST);
+		panelConfigs.setLayout(new BorderLayout(2, 2));
+		
+		JCheckBox chckbxFullLearn = new JCheckBox("Full Learn");
+		chckbxFullLearn.setToolTipText("Check to Neural Network learn full transitions");
+		panelConfigs.add(chckbxFullLearn, BorderLayout.NORTH);
+		
 		JButton btnRun = new JButton("Run");
-		panel_1.add(btnRun);
+		panelConfigs.add(btnRun, BorderLayout.SOUTH);
+		
+		JList listPaths = new JList();
+		listPaths.setBorder(new TitledBorder(null, "Paths", TitledBorder.LEADING, TitledBorder.TOP, null, null));
+		panelConfigs.add(listPaths, BorderLayout.CENTER);
 		btnRun.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				txtLogs.setText("");
 				statusBar.setMessage("Processing...");
-				jhek.extractTopology();
-				jhek.processa();
+				jhek.processa(summary);
+				labelEpochs.setText(" "+summary.getEpochs());
 				statusBar.setMessage("... done!");
 			}
 		});
@@ -315,5 +386,4 @@ public class JHekaton {
 		System.setOut(new PrintStream(out, true));
 		System.setErr(new PrintStream(out, true));
 	}
-	
 }
