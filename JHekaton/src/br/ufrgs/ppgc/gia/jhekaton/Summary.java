@@ -1,10 +1,15 @@
 package br.ufrgs.ppgc.gia.jhekaton;
 
+import java.util.List;
+
 public class Summary {
 
 	private int states;
 	private int transitions;
 	private int epochs;
+	private double trainningError;
+	
+	private List<List<Object>> trainningSet;
 	
 	private int inputs;
 	private int hiddens;
@@ -60,5 +65,21 @@ public class Summary {
 
 	public void setOutputs(int outputs) {
 		this.outputs = outputs;
+	}
+
+	public double getTrainningError() {
+		return trainningError;
+	}
+
+	public void setTrainningError(double trainningError) {
+		this.trainningError = trainningError;
+	}
+
+	public List<List<Object>> getTrainningSet() {
+		return trainningSet;
+	}
+
+	public void setTrainningSet(List<List<Object>> trainningSet) {
+		this.trainningSet = trainningSet;
 	}
 }

@@ -49,6 +49,7 @@ public class JHekaton {
 	private int numInputs;
 	private int numHidden;
 	private int numOutputs;
+	private List<List<Object>> trainningSet;
 
 	public JHekaton(){
 		this.entradas = new HashMap<String, Integer>();
@@ -112,21 +113,13 @@ public class JHekaton {
 		result.setInputs(this.numInputs);
 		result.setHiddens(this.numHidden);
 		result.setOutputs(this.numOutputs);
-		
-		return result;
-	}
-	
-	public void processa(Summary summary) {
-		System.out.println("Topologia da Rede: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
-		
-		// Gera o Arquivo de treinamento - Sequencia de Supervisao
-//		List<Object> conjuntoTreinamento = JHekaton.geraConjuntoTreinamentoBFS(this.region);
-		List<List<Object>> conjuntoTreinamento = new ArrayList<List<Object>>();
+
+		// Generate Learninng Sequences
+		this.trainningSet = new ArrayList<List<Object>>();
 		Subvertex initialState = XmiUtil.getStatesByType(this.region, StateType.FINAL).get(0);
-		JHekaton.geraConjuntoTreinamentoBackwardTransversal(conjuntoTreinamento, this.region, initialState);
-		
-		// Remove caminhos que podem não terminar no estado final
-		for(Iterator<List<Object>> p = conjuntoTreinamento.iterator(); p.hasNext();){
+		JHekaton.geraConjuntoTreinamentoBackwardTransversal(this.trainningSet, this.region, initialState);
+		// Remove paths that doesn't finish in the final state
+		for(Iterator<List<Object>> p = trainningSet.iterator(); p.hasNext();){
 			List<Object> next = p.next();
 			Object ultimo = next.get(next.size()-1);
 			if(!(ultimo instanceof Subvertex && ((Subvertex)ultimo).getType().equals(StateType.FINAL.getUmlType())) ){
@@ -134,9 +127,15 @@ public class JHekaton {
 			}
 		}
 		
+		return result;
+	}
+	
+	public void processa(Summary summary) {
+		System.out.println("Network Topology: "+this.numInputs+":"+this.numHidden+":"+this.numOutputs+"\r\n");
+		
 		System.out.println("\r\n");
 		Instancia inst = new Instancia(this.numInputs, this.numOutputs);
-		inst.construir(conjuntoTreinamento.get(0));
+		inst.construir(trainningSet.get(0));
 		
 		// Criação da rede, com 3 camadas			
 		ElmanPattern pattern = new ElmanPattern();
@@ -174,6 +173,7 @@ public class JHekaton {
 		summary.setEpochs(epoch);
 		System.out.println("Treinamento finalizado em "+epoch+" épocas");
 		System.out.println("Erro Final apos treinamento: "+trainMain.getError()+"\r\n");
+		summary.setTrainningError(trainMain.getError());
 		
 		// teste 
 		System.out.println("Caso de teste:"+"\r\n");

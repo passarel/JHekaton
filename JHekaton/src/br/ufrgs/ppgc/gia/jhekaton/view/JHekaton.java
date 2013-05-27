@@ -14,6 +14,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
+import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
 import javax.swing.JFileChooser;
@@ -44,6 +45,7 @@ import com.mxgraph.swing.util.mxMorphing;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.view.mxGraph;
 import com.mxgraph.view.mxStylesheet;
+import javax.swing.AbstractListModel;
 
 public class JHekaton {
 
@@ -57,6 +59,8 @@ public class JHekaton {
 
 	private mxGraphComponent graphComponent;
 	private mxGraph diagram;
+	private JLabel labelTrainningError;
+	private JList<String> listPaths;
 
 	/**
 	 * Launch the application.
@@ -114,6 +118,10 @@ public class JHekaton {
 		diagram.getModel().endUpdate();
 		
 		
+		this.rearrange();
+	}
+
+	private void rearrange() {
 		// define layout
         mxIGraphLayout layout = new mxFastOrganicLayout(this.diagram);
         // layout using morphing
@@ -126,6 +134,7 @@ public class JHekaton {
             this.diagram.getModel().endUpdate();
         }
 	}
+
 	
 	private void addVertex(Object parent, List lista, List<String> ids, Region region, Subvertex state, int position, int count, double x){
 
@@ -229,6 +238,27 @@ public class JHekaton {
 		
 		tabs.addTab("Diagram", null, panelDiagram, null);
 		
+		JPanel panel = new JPanel();
+		panelDiagram.add(panel, BorderLayout.NORTH);
+		panel.setLayout(new BorderLayout(0, 0));
+		
+		final JCheckBox chckbxManualArrange = new JCheckBox("Manual Arrange");
+		chckbxManualArrange.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				graphComponent.setEnabled(chckbxManualArrange.isSelected());
+			}
+		});
+		
+		panel.add(chckbxManualArrange, BorderLayout.WEST);
+		
+		JButton btnRearrange = new JButton("Rearrange");
+		btnRearrange.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent e) {
+				rearrange();
+			}
+		});
+		panel.add(btnRearrange, BorderLayout.EAST);
+		
 		JPanel panelSummary = new JPanel();
 		tabs.addTab("Summary", null, panelSummary, null);
 		panelSummary.setLayout(new GridLayout(0, 2, 0, 0));
@@ -238,19 +268,19 @@ public class JHekaton {
 		panelSummary.add(panelSummaryDiagram);
 		panelSummaryDiagram.setLayout(new GridLayout(0, 2, 0, 0));
 		
-		JLabel lblTransitions = new JLabel("Transitions:");
-		lblTransitions.setHorizontalAlignment(SwingConstants.RIGHT);
-		panelSummaryDiagram.add(lblTransitions);
-		
-		final JLabel labelNumTrantitions = new JLabel("");
-		panelSummaryDiagram.add(labelNumTrantitions);
-		
 		JLabel lblStates = new JLabel("States:");
 		lblStates.setHorizontalAlignment(SwingConstants.RIGHT);
 		panelSummaryDiagram.add(lblStates);
 		
 		final JLabel labelNumStates = new JLabel("");
 		panelSummaryDiagram.add(labelNumStates);
+		
+		JLabel lblTransitions = new JLabel("Transitions:");
+		lblTransitions.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryDiagram.add(lblTransitions);
+		
+		final JLabel labelNumTrantitions = new JLabel("");
+		panelSummaryDiagram.add(labelNumTrantitions);
 		
 		JPanel panelSummaryNN = new JPanel();
 		panelSummaryNN.setBorder(new TitledBorder(null, "Neural Network", TitledBorder.LEADING, TitledBorder.TOP, null, null));
@@ -271,6 +301,13 @@ public class JHekaton {
 		
 		final JLabel labelEpochs = new JLabel("");
 		panelSummaryNN.add(labelEpochs);
+		
+		JLabel lblTrainningError = new JLabel("Trainning Error:");
+		lblTrainningError.setHorizontalAlignment(SwingConstants.RIGHT);
+		panelSummaryNN.add(lblTrainningError);
+		
+		labelTrainningError = new JLabel("");
+		panelSummaryNN.add(labelTrainningError);
 		
 		txtLogs = new JTextArea();
 		txtLogs.setFont(new Font("Courier 10 Pitch", Font.PLAIN, 12));
@@ -306,7 +343,7 @@ public class JHekaton {
 
 		final br.ufrgs.ppgc.gia.jhekaton.JHekaton jhek = new br.ufrgs.ppgc.gia.jhekaton.JHekaton();
 		
-		final JFileChooser fc = new JFileChooser("/home/igor/git/JHekaton/JHekaton/src/");
+		final JFileChooser fc = new JFileChooser("/home/igor/git/JHekaton/JHekaton/test/");
 		btnOpen.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				
@@ -325,6 +362,12 @@ public class JHekaton {
 		            labelTopology.setText(" "+summary.getTopology());
 		            
 		            updateDiagram(diag);
+		            
+		            DefaultListModel<String> model = new DefaultListModel<>();
+		            for(int i = 0; i < summary.getTrainningSet().size(); i++){		            	
+		            	model.addElement("path"+i);
+		            }
+		            listPaths.setModel(model);
 				}
 				
 			}
@@ -342,7 +385,17 @@ public class JHekaton {
 		JButton btnRun = new JButton("Run");
 		panelConfigs.add(btnRun, BorderLayout.SOUTH);
 		
-		JList listPaths = new JList();
+		listPaths = new JList();
+		listPaths.setToolTipText("Select paths to trainning set");
+		listPaths.setModel(new AbstractListModel() {
+			String[] values = new String[] {"path0", "path1", "path2"};
+			public int getSize() {
+				return values.length;
+			}
+			public Object getElementAt(int index) {
+				return values[index];
+			}
+		});
 		listPaths.setBorder(new TitledBorder(null, "Paths", TitledBorder.LEADING, TitledBorder.TOP, null, null));
 		panelConfigs.add(listPaths, BorderLayout.CENTER);
 		btnRun.addActionListener(new ActionListener() {
@@ -350,6 +403,7 @@ public class JHekaton {
 				statusBar.setMessage("Processing...");
 				jhek.processa(summary);
 				labelEpochs.setText(" "+summary.getEpochs());
+				labelTrainningError.setText(" "+summary.getTrainningError());
 				statusBar.setMessage("... done!");
 			}
 		});
