@@ -126,7 +126,7 @@ public class JHekaton {
 				p.remove();
 			}
 		}
-		
+		result.setTrainningSet(this.trainningSet);
 		return result;
 	}
 	

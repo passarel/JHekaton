@@ -1,6 +1,7 @@
 package br.ufrgs.ppgc.gia.jhekaton.view;
 
 import java.awt.BorderLayout;
+import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -14,6 +15,7 @@ import java.util.ArrayList;
 import java.util.Hashtable;
 import java.util.List;
 
+import javax.swing.AbstractListModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
@@ -29,6 +31,8 @@ import javax.swing.JTextField;
 import javax.swing.SwingConstants;
 import javax.swing.SwingUtilities;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 
 import br.ufrgs.ppgc.gia.jhekaton.StateType;
 import br.ufrgs.ppgc.gia.jhekaton.Summary;
@@ -41,11 +45,14 @@ import com.mxgraph.layout.mxFastOrganicLayout;
 import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.model.mxICell;
 import com.mxgraph.swing.mxGraphComponent;
+import com.mxgraph.swing.handler.mxCellTracker;
 import com.mxgraph.swing.util.mxMorphing;
 import com.mxgraph.util.mxConstants;
+import com.mxgraph.util.mxEvent;
+import com.mxgraph.util.mxEventObject;
+import com.mxgraph.util.mxEventSource.mxIEventListener;
 import com.mxgraph.view.mxGraph;
 import com.mxgraph.view.mxStylesheet;
-import javax.swing.AbstractListModel;
 
 public class JHekaton {
 
@@ -115,8 +122,7 @@ public class JHekaton {
 			diagram.insertEdge(parent, transition.getId(), null, find(transition.getSource(), lista), find(transition.getTarget(), lista),"ARROW");
 		}
 		
-		diagram.getModel().endUpdate();
-		
+		diagram.getModel().endUpdate();		
 		
 		this.rearrange();
 	}
@@ -130,6 +136,14 @@ public class JHekaton {
             layout.execute(this.diagram.getDefaultParent());
         } finally {
             mxMorphing morph = new mxMorphing(graphComponent, 20, 1.2, 20);
+            morph.addListener(mxEvent.DONE, new mxIEventListener() {
+            	
+            	@Override
+            	public void invoke(Object arg0, mxEventObject arg1) {
+            		diagram.getModel().endUpdate();
+            	}
+            	
+            });
             morph.startAnimation();
             this.diagram.getModel().endUpdate();
         }
@@ -364,10 +378,12 @@ public class JHekaton {
 		            updateDiagram(diag);
 		            
 		            DefaultListModel<String> model = new DefaultListModel<>();
-		            for(int i = 0; i < summary.getTrainningSet().size(); i++){		            	
-		            	model.addElement("path"+i);
+		            if(summary.getTrainningSet() != null){
+			            for(int i = 0; i < summary.getTrainningSet().size(); i++){		            	
+			            	model.addElement("path"+i);
+			            }
+			            listPaths.setModel(model);
 		            }
-		            listPaths.setModel(model);
 				}
 				
 			}
@@ -386,9 +402,13 @@ public class JHekaton {
 		panelConfigs.add(btnRun, BorderLayout.SOUTH);
 		
 		listPaths = new JList();
+		listPaths.addListSelectionListener(new ListSelectionListener() {
+			public void valueChanged(ListSelectionEvent e) {
+			}
+		});
 		listPaths.setToolTipText("Select paths to trainning set");
 		listPaths.setModel(new AbstractListModel() {
-			String[] values = new String[] {"path0", "path1", "path2"};
+			String[] values = new String[] {};
 			public int getSize() {
 				return values.length;
 			}
