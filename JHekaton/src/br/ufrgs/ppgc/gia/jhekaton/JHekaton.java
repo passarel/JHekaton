@@ -50,6 +50,8 @@ public class JHekaton {
 	private int numHidden;
 	private int numOutputs;
 	private List<List<Object>> trainningSet;
+	private double[][] arrayEntradas;
+	private double[][] arraySaidas;
 
 	public JHekaton(){
 		this.entradas = new HashMap<String, Integer>();
@@ -148,6 +150,33 @@ public class JHekaton {
 		pattern.setOutputNeurons(this.numOutputs);
 		BasicNetwork rede = (BasicNetwork)pattern.generate();
 		
+		if(summary.getFullLearning()){
+
+			this.generateFullTrainingSet();
+
+			MLDataSet trainingSet = new BasicMLDataSet(this.arrayEntradas, this.arraySaidas) ;
+			
+			CalculateScore score = new TrainingSetScore(trainingSet);
+
+			final MLTrain trainMain = new Backpropagation(rede, trainingSet, 0.0000000001, 0.001);
+			final MLTrain trainAlt = new NeuralSimulatedAnnealing(rede, score, 10, 2, 100);
+
+			final StopTrainingStrategy stop = new StopTrainingStrategy();
+			trainMain.addStrategy(new Greedy());
+			trainMain.addStrategy(new HybridStrategy(trainAlt));
+			trainMain.addStrategy(stop);
+
+			int epoch = 0;
+			while (!stop.shouldStop()) {
+				// cada iteração é uma época
+				trainMain.iteration();
+				epoch++;
+			}
+			trainMain.finishTraining();
+
+			
+		}
+		
 
 		double[][] entradasTreinamento = inst.getEntradas();
 		double[][] saidasTreinamento = inst.getSaidas();
@@ -207,6 +236,40 @@ public class JHekaton {
 		}
 		System.out.println("\r\n");
 		
+	}
+	
+	private void generateFullTrainingSet(){
+
+		// Definition
+		List<double[]> entradas = new ArrayList<double[]>();
+		List<double[]> saidas   = new ArrayList<double[]>();
+		
+		
+		for(int i = 0; i < this.region.getTransition().size(); i++ ){
+			// Inicialization
+			double[] entrada = new double[this.numInputs];
+			for (int i1 = 0; i1 < entrada.length; i1++) {
+				entrada[i1] = -1;
+			}
+			double[] saida = new double[this.numOutputs];
+			for (int i2 = 0; i2 < saida.length; i2++) {
+				saida[i2] = -1;
+			}
+
+			Transition t = this.region.getTransition().get(i);
+			
+			entrada[JHekaton.entradas.get(t.getSource())] = 1;
+			entrada[JHekaton.entradas.get(t.getId())] = 1;
+			
+			saida[JHekaton.saidas.get(t.getTarget())] = 1;
+			
+			entradas.add(entrada);
+			saidas.add(saida);
+			
+		}
+		
+		this.arrayEntradas = entradas.toArray(new double[entradas.size()][this.numInputs]);
+		this.arraySaidas   = saidas.toArray(new double[saidas.size()][this.numOutputs]);
 	}
 	
 	private static void geraConjuntoTreinamentoBackwardTransversal(List<List<Object>> result, Region diagram, Subvertex state){
@@ -282,21 +345,23 @@ class Instancia {
 
 	
 	public void construir(List<?> caminho){
+		// Definition
 		this.entradas = new ArrayList<double[]>();
 		this.saidas   = new ArrayList<double[]>();
 		
+		// Inicialization
+		double[] entrada = new double[this.countEntradas];
+		for (int i = 0; i < entrada.length; i++) {
+			entrada[i] = -1;
+		}
+		double[] saida = new double[this.countSaidas];
+		for (int i = 0; i < saida.length; i++) {
+			saida[i] = -1;
+		}
+
 		Iterator iter = caminho.iterator();		
 		Object o = iter.next();
 		while(iter.hasNext()){
-			
-			double[] entrada = new double[this.countEntradas];
-			for (int i = 0; i < entrada.length; i++) {
-				entrada[i] = -1;
-			}
-			double[] saida = new double[this.countSaidas];
-			for (int i = 0; i < saida.length; i++) {
-				saida[i] = -1;
-			}
 			
 			if(o instanceof Subvertex){
 				entrada[JHekaton.entradas.get(((Subvertex)o).getId())] = 1;

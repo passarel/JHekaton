@@ -4,6 +4,8 @@ import java.util.List;
 
 public class Summary {
 
+	private Boolean fullLearning;
+	
 	private int states;
 	private int transitions;
 	private int epochs;
@@ -81,5 +83,13 @@ public class Summary {
 
 	public void setTrainningSet(List<List<Object>> trainningSet) {
 		this.trainningSet = trainningSet;
+	}
+
+	public Boolean getFullLearning() {
+		return fullLearning;
+	}
+
+	public void setFullLearning(Boolean fullLearning) {
+		this.fullLearning = fullLearning;
 	}
 }

@@ -394,7 +394,7 @@ public class JHekaton {
 		frmJhekaton.getContentPane().add(panelConfigs, BorderLayout.WEST);
 		panelConfigs.setLayout(new BorderLayout(2, 2));
 		
-		JCheckBox chckbxFullLearn = new JCheckBox("Full Learn");
+		final JCheckBox chckbxFullLearn = new JCheckBox("Full Learn");
 		chckbxFullLearn.setToolTipText("Check to Neural Network learn full transitions");
 		panelConfigs.add(chckbxFullLearn, BorderLayout.NORTH);
 		
@@ -421,6 +421,7 @@ public class JHekaton {
 		btnRun.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				statusBar.setMessage("Processing...");
+				summary.setFullLearning(chckbxFullLearn.isSelected());
 				jhek.processa(summary);
 				labelEpochs.setText(" "+summary.getEpochs());
 				labelTrainningError.setText(" "+summary.getTrainningError());
