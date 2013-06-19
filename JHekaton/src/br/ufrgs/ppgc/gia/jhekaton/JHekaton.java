@@ -6,6 +6,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -150,9 +151,9 @@ public class JHekaton {
 		pattern.setOutputNeurons(this.numOutputs);
 		BasicNetwork rede = (BasicNetwork)pattern.generate();
 		
+		// Code block to full transitions learning
+		this.generateFullTrainingSet();
 		if(summary.getFullLearning()){
-
-			this.generateFullTrainingSet();
 
 			MLDataSet trainingSet = new BasicMLDataSet(this.arrayEntradas, this.arraySaidas) ;
 			
@@ -236,6 +237,66 @@ public class JHekaton {
 		}
 		System.out.println("\r\n");
 		
+		summary.setNewDiagram(this.recreate(rede));
+	}
+	
+	private Model.PackagedElement.Region recreate(BasicNetwork rede){
+		Model.PackagedElement.Region newRegion = new Region();
+		
+		List<Subvertex> subvertex = this.region.getSubvertex();
+		for (Subvertex vertex : subvertex) {			
+			newRegion.getSubvertex().add(vertex);
+		}
+
+		String[] inputs = new String[JHekaton.entradas.size()];
+		for(Iterator<Map.Entry<String, Integer>> iter = JHekaton.entradas.entrySet().iterator(); iter.hasNext(); ){
+			Entry<String, Integer> next = iter.next();
+			inputs[next.getValue()] = next.getKey();
+		}
+		
+		String[] outputs = new String[JHekaton.saidas.size()];
+		for(Iterator<Map.Entry<String, Integer>> iter = JHekaton.saidas.entrySet().iterator(); iter.hasNext(); ){
+			Entry<String, Integer> next = iter.next();
+			outputs[next.getValue()] = next.getKey();
+		}
+		
+		for(int i = 0; i < this.arrayEntradas.length; i++){
+			
+			MLData testeSet = new BasicMLData(this.arrayEntradas[i]);
+			MLData result = rede.compute(testeSet);
+
+			String source = inputs[this.inputState(this.arrayEntradas[i])];
+			String target = outputs[this.maxIndex(result.getData())];
+			
+			Transition transitionElected = new Transition();
+			transitionElected.setId(source+"_"+target);
+			transitionElected.setSource(source);
+			transitionElected.setTarget(target);
+			 
+			newRegion.getTransition().add(transitionElected);
+		}
+		return newRegion;
+	}
+	
+	private int inputState(double[] data){
+		for (int i = 0; i < data.length; i++) {
+			if(data[i] < 0){
+				return i;
+			}
+		}
+		return -1;
+	}
+	
+	private int maxIndex(double[] data){
+		int result = 0;
+		double min = Double.MAX_VALUE;
+		for (int j = 0; j < data.length; j++) {
+			if(data[j] < min){
+				min = data[j];
+				result = j;
+			}
+		}
+		return result;
 	}
 	
 	private void generateFullTrainingSet(){
@@ -249,19 +310,19 @@ public class JHekaton {
 			// Inicialization
 			double[] entrada = new double[this.numInputs];
 			for (int i1 = 0; i1 < entrada.length; i1++) {
-				entrada[i1] = -1;
+				entrada[i1] = 1;
 			}
 			double[] saida = new double[this.numOutputs];
 			for (int i2 = 0; i2 < saida.length; i2++) {
-				saida[i2] = -1;
+				saida[i2] = 1;
 			}
 
 			Transition t = this.region.getTransition().get(i);
 			
-			entrada[JHekaton.entradas.get(t.getSource())] = 1;
-			entrada[JHekaton.entradas.get(t.getId())] = 1;
+			entrada[JHekaton.entradas.get(t.getSource())] = -1;
+			entrada[JHekaton.entradas.get(t.getId())] = -1;
 			
-			saida[JHekaton.saidas.get(t.getTarget())] = 1;
+			saida[JHekaton.saidas.get(t.getTarget())] = -1;
 			
 			entradas.add(entrada);
 			saidas.add(saida);

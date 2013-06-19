@@ -1,7 +1,6 @@
 package br.ufrgs.ppgc.gia.jhekaton.view;
 
 import java.awt.BorderLayout;
-import java.awt.Color;
 import java.awt.EventQueue;
 import java.awt.Font;
 import java.awt.GridLayout;
@@ -45,7 +44,6 @@ import com.mxgraph.layout.mxFastOrganicLayout;
 import com.mxgraph.layout.mxIGraphLayout;
 import com.mxgraph.model.mxICell;
 import com.mxgraph.swing.mxGraphComponent;
-import com.mxgraph.swing.handler.mxCellTracker;
 import com.mxgraph.swing.util.mxMorphing;
 import com.mxgraph.util.mxConstants;
 import com.mxgraph.util.mxEvent;
@@ -68,6 +66,8 @@ public class JHekaton {
 	private mxGraph diagram;
 	private JLabel labelTrainningError;
 	private JList<String> listPaths;
+	private mxGraph diagramResult;
+	private mxGraphComponent graphComponentResult;
 
 	/**
 	 * Launch the application.
@@ -92,14 +92,12 @@ public class JHekaton {
 		initialize();
 	}
 
-	private void updateDiagram(Region region){
+	private void updateDiagram(Region region, mxGraph diagram, mxGraphComponent graphComponent){
 		
-		this.graphComponent.setEnabled(false);
-		
-		this.diagram.getModel().beginUpdate();
-		this.diagram.removeCells(this.diagram.getChildVertices(this.diagram.getDefaultParent()));
+		diagram.getModel().beginUpdate();
+		diagram.removeCells(diagram.getChildVertices(diagram.getDefaultParent()));
 
-		Object parent = this.diagram.getDefaultParent();
+		Object parent = diagram.getDefaultParent();
 		
 		List lista = new ArrayList();
 
@@ -116,7 +114,7 @@ public class JHekaton {
 		// Recursive Version
 		List<String> ids = new ArrayList<String>();
 		Subvertex initialState = XmiUtil.getStatesByType(region, StateType.INITIAL).get(0);
-		this.addVertex(parent, lista, ids, region, initialState, 1, 1, 0);
+		this.addVertex(diagram, graphComponent, parent, lista, ids, region, initialState, 1, 1, 0);
 		
 		for (Transition transition : region.getTransition()) {
 			diagram.insertEdge(parent, transition.getId(), null, find(transition.getSource(), lista), find(transition.getTarget(), lista),"ARROW");
@@ -124,16 +122,16 @@ public class JHekaton {
 		
 		diagram.getModel().endUpdate();		
 		
-		this.rearrange();
+		this.rearrange(diagram);
 	}
 
-	private void rearrange() {
+	private void rearrange(final mxGraph diagram) {
 		// define layout
-        mxIGraphLayout layout = new mxFastOrganicLayout(this.diagram);
+        mxIGraphLayout layout = new mxFastOrganicLayout(diagram);
         // layout using morphing
-        this.diagram.getModel().beginUpdate();
+        diagram.getModel().beginUpdate();
         try {
-            layout.execute(this.diagram.getDefaultParent());
+            layout.execute(diagram.getDefaultParent());
         } finally {
             mxMorphing morph = new mxMorphing(graphComponent, 20, 1.2, 20);
             morph.addListener(mxEvent.DONE, new mxIEventListener() {
@@ -150,10 +148,10 @@ public class JHekaton {
 	}
 
 	
-	private void addVertex(Object parent, List lista, List<String> ids, Region region, Subvertex state, int position, int count, double x){
+	private void addVertex(mxGraph diagram, mxGraphComponent graphComponent, Object parent, List lista, List<String> ids, Region region, Subvertex state, int position, int count, double x){
 
 		int division = count+1;
-		double ratio = this.graphComponent.getHeight()/division;
+		double ratio = graphComponent.getHeight()/division;
 		double position_x = 60+x;
 		double position_y = ratio * position;
 		double width = state.getName().length() * 10;
@@ -176,7 +174,7 @@ public class JHekaton {
 				Subvertex newState = XmiUtil.getStateById(region, transition.getTarget());
 				
 				if(!ids.contains(newState.getId())){
-					this.addVertex(parent, lista, ids,region, newState, i+1, transitions.size(), position_x);					
+					this.addVertex(diagram, graphComponent, parent, lista, ids,region, newState, i+1, transitions.size(), position_x);					
 				}
 				
 				
@@ -184,7 +182,7 @@ public class JHekaton {
 		}
 	}
 
-	private void fillStyles() {
+	private void fillStyles(mxGraph diagram) {
 		mxStylesheet stylesheet = diagram.getStylesheet();
 		Hashtable<String, Object> styleInitial = new Hashtable<String, Object>();
 		styleInitial.put(mxConstants.STYLE_SHAPE, mxConstants.SHAPE_HEXAGON);
@@ -244,11 +242,12 @@ public class JHekaton {
 		panelDiagram.setToolTipText("State Machine Diagram");
 		panelDiagram.setLayout(new BorderLayout(0, 0));
 		
-		diagram = new mxGraph();
-		graphComponent = new mxGraphComponent(diagram);
+		this.diagram = new mxGraph();
+		this.graphComponent = new mxGraphComponent(this.diagram);
+		this.graphComponent.setEnabled(false);
 		this.diagram.setAllowLoops(true);
-		this.fillStyles();
-		panelDiagram.add(graphComponent);
+		this.fillStyles(this.diagram);
+		panelDiagram.add(this.graphComponent);
 		
 		tabs.addTab("Diagram", null, panelDiagram, null);
 		
@@ -268,7 +267,7 @@ public class JHekaton {
 		JButton btnRearrange = new JButton("Rearrange");
 		btnRearrange.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				rearrange();
+				rearrange(diagram);
 			}
 		});
 		panel.add(btnRearrange, BorderLayout.EAST);
@@ -323,6 +322,19 @@ public class JHekaton {
 		labelTrainningError = new JLabel("");
 		panelSummaryNN.add(labelTrainningError);
 		
+		JPanel panelResult = new JPanel();
+		
+		this.diagramResult = new mxGraph();
+		this.graphComponentResult = new mxGraphComponent(this.diagramResult);
+//		this.graphComponentResult.setEnabled(false);
+		this.diagramResult.setAllowLoops(true);
+		this.fillStyles(this.diagramResult);
+		panelResult.setLayout(new BorderLayout(0, 0));
+		panelResult.add(this.graphComponentResult);
+
+		tabs.addTab("Result", null, panelResult, null);
+		
+		
 		txtLogs = new JTextArea();
 		txtLogs.setFont(new Font("Courier 10 Pitch", Font.PLAIN, 12));
 		txtLogs.setEditable(false);
@@ -375,7 +387,7 @@ public class JHekaton {
 		            
 		            labelTopology.setText(" "+summary.getTopology());
 		            
-		            updateDiagram(diag);
+		            updateDiagram(diag, diagram, graphComponent);
 		            
 		            DefaultListModel<String> model = new DefaultListModel<>();
 		            if(summary.getTrainningSet() != null){
@@ -423,6 +435,9 @@ public class JHekaton {
 				statusBar.setMessage("Processing...");
 				summary.setFullLearning(chckbxFullLearn.isSelected());
 				jhek.processa(summary);
+				
+				updateDiagram(summary.getNewDiagram(), diagramResult, graphComponentResult);
+				
 				labelEpochs.setText(" "+summary.getEpochs());
 				labelTrainningError.setText(" "+summary.getTrainningError());
 				statusBar.setMessage("... done!");

@@ -2,6 +2,8 @@ package br.ufrgs.ppgc.gia.jhekaton;
 
 import java.util.List;
 
+import br.ufrgs.ppgc.gia.jhekaton.xml.Model;
+
 public class Summary {
 
 	private Boolean fullLearning;
@@ -16,6 +18,8 @@ public class Summary {
 	private int inputs;
 	private int hiddens;
 	private int outputs;
+	
+	private Model.PackagedElement.Region newDiagram;
 
 	public int getStates() {
 		return states;
@@ -91,5 +95,13 @@ public class Summary {
 
 	public void setFullLearning(Boolean fullLearning) {
 		this.fullLearning = fullLearning;
+	}
+
+	public Model.PackagedElement.Region getNewDiagram() {
+		return newDiagram;
+	}
+
+	public void setNewDiagram(Model.PackagedElement.Region newDiagram) {
+		this.newDiagram = newDiagram;
 	}
 }
